@@ -13,72 +13,80 @@ ENV/
 env.bak/
 venv.bak/
 
-# IDE
+# IDE / OS
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
 .DS_Store
+Thumbs.db
 
-# 模型文件
+# 通用日志/缓存
+*.log
+logs/
+runs/
+.cache/
+*.tmp
+*.temp
+*.cache
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# 训练/推理产物（大文件）
 *.pt
 *.pth
+*.pth.tar
 *.bin
 *.safetensors
 *.pkl
 *.h5
 *.ckpt
-*.pth.tar
-
-# 检查点和保存的模型
-checkpoints/
-save_model/
-save_model1/
 *.checkpoint
 
-# 数据文件（通常很大，不应提交）
-*.txt
-*.csv
-*.jsonl
-*.json
-*.tsv
-*.parquet
+# -----------------------------
+# 只忽略“数据/模型产物”的目录内容，同时用 .gitkeep 保留目录结构
+# -----------------------------
 
-# 日志文件
-*.log
-logs/
-runs/
+# 01~06（电商标题任务）
+01-data/**
+!01-data/.gitkeep
 
-# 临时文件
-*.tmp
-*.temp
-*.cache
-.cache/
+02-rf/*.csv
+!02-rf/.gitkeep
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
+03-fasttest/**/*_fast*.txt
+03-fasttest/**/*.bin
+!03-fasttest/.gitkeep
 
-# 预训练模型目录（通常很大）
-**/bert_pretrain/
-**/pretrain/
-**/pretrained/
+04-bert/data/**
+!04-bert/data/.gitkeep
+!04-bert/data/bert_pretrain/.gitkeep
+!04-bert/data/data1/.gitkeep
 
-# 特定目录的数据文件（如果需要保留某些数据文件，可以注释掉相应行）
-# 01-data/ 目录下的数据文件
-# 02-rf/ 目录下的数据文件
-# 03-fasttest/ 目录下的数据文件
-# 04-bert/data/ 目录下的数据文件
-# LoRA_GLM/data/ 目录下的数据文件
-# P-Tuning/data/ 目录下的数据文件
-# PET/data/ 目录下的数据文件
+04-bert/save_model/**
+!04-bert/save_model/.gitkeep
+04-bert/save_model1/**
+!04-bert/save_model1/.gitkeep
 
-# 系统文件
-Thumbs.db
-.DS_Store
+05-bert_distil/save_model/**
+!05-bert_distil/save_model/.gitkeep
 
-# 其他
+# 三种微调方式（LoRA / P-Tuning / PET）
+LoRA_GLM/data/**/*.jsonl
+!LoRA_GLM/data/.gitkeep
+LoRA_GLM/checkpoints/**
+!LoRA_GLM/checkpoints/.gitkeep
+
+P-Tuning/checkpoints/**
+!P-Tuning/checkpoints/.gitkeep
+
+PET/checkpoints/**
+!PET/checkpoints/.gitkeep
+
+# Python 打包产物
 *.egg-info/
 dist/
 build/
