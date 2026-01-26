@@ -1,6 +1,6 @@
-# 新闻文本分类项目
+# 文本分类项目
 
-一个全面的中文新闻文本分类项目，实现了从传统机器学习到深度学习、从预训练模型到LoRA、P-Tuning、PET的多种分类方法。
+一个全面的中文文本分类项目，实现了从传统机器学习到深度学习、从预训练模型到LoRA、P-Tuning、PET的多种分类方法。
 
 ## 📋 项目简介
 
@@ -97,29 +97,84 @@ News666/
 
 ## 🚀 快速开始
 
-### 环境要求
+### 0. 克隆项目
+
+```bash
+git clone https://github.com/<your_name>/News666.git
+cd News666
+```
+
+### 1. 环境要求
 
 - Python 3.7+
-- PyTorch 1.13+
-- CUDA（可选，用于GPU加速）
+- PyTorch 1.13+（建议安装 GPU 版本）
+- CUDA（可选，用于 GPU 加速）
 
-### 安装依赖
+### 2. 安装依赖
 
-#### 基础环境（推荐）
+> 如果只是想先跑通 BERT / FastText / RF，推荐先安装 `requirements0.txt`；  
+> 如果希望把 LoRA / P-Tuning / PET 全部跑一遍，建议使用 `requirements1.txt`。
+
+**基础环境（推荐）**
+
 ```bash
 pip install -r requirements0.txt
 ```
 
-#### 完整环境（包含所有功能）
+**完整环境（包含所有功能）**
+
 ```bash
 pip install -r requirements1.txt
 ```
 
-### 数据准备
+### 3. 数据与模型准备（重要）
 
-1. 将训练数据放置在 `01-data/` 目录下
+> 仓库本身不包含大体量的数据和预训练模型，只保留了目录结构（通过 `.gitkeep`）。  
+> 克隆之后，需要按下面步骤把数据和模型放到对应目录。
+
+1. **新闻分类基础数据（01-data）**
+   - 在 `01-data/` 下准备以下文件（若已存在可直接使用）：
+     - `train.txt`、`dev.txt`、`test.txt`：每行 `文本内容\t标签`
+     - `class.txt`：每行一个类别名称（共 10 类，见上文）
+2. **BERT 所需数据与预训练权重（04-bert）**
+   - 将上面的 `train/dev/test/class` 拷贝或链接到 `04-bert/data/data1/`（名称保持不变）；
+   - 在 `04-bert/data/bert_pretrain/` 放置中文 BERT 预训练模型，文件命名为：
+     - `bert_config.json`
+     - `pytorch_model.bin`
+     - `vocab.txt`
+   - 并在 `model/bert.py` 的 `Config` 中确认上述路径是否正确。
+3. **LoRA_GLM 数据与底座模型**
+   - 在 `LoRA_GLM/data/` 下准备：
+     - `dataset.jsonl`（基础训练数据）
+     - `mixed_train_dataset.jsonl`、`mixed_dev_dataset.jsonl`（混合/增强数据）
+   - 每行通常是一个 JSON 对象，包含输入文本和标签/回答（具体字段可参考 `data_handle/` 中的数据处理脚本）。
+   - 在 `glm_config.py` 中配置底座模型路径（如 ChatGLM2 等本地/在线模型）。
+4. **P-Tuning / PET 数据和 verbalizer**
+   - 在 `P-Tuning/data/`、`PET/data/` 中按照各自目录下的示例格式准备：
+     - `train.txt`、`dev.txt`（同样是 `文本\t标签`）
+     - `verbalizer.txt` / `prompt.txt`（标签到提示词的映射、模板等）
+   - 在对应的 `*_config.py` 中检查/修改模型与数据路径。
+
+### 4. 一键跑通一个 Baseline（推荐从 BERT 开始）
+
+如果你刚克隆仓库，希望**先快速验证项目能跑起来**，推荐按下面顺序操作：
+
+1. 准备 `01-data/` 和 `04-bert/data/`、`04-bert/data/bert_pretrain/`（见「3. 数据与模型准备」）；
+2. 安装依赖（`pip install -r requirements0.txt`）；
+3. 运行 BERT：
+
+```bash
+cd 04-bert
+python run.py
+```
+
+如果能正常开始训练并在控制台看到 loss/accuracy 输出，说明环境与数据准备基本无问题，之后可以再尝试 LoRA、P-Tuning、PET 等模块。
+
+### 数据准备（概览）
+
+1. 将训练数据放置在 `01-data/` 目录下（或拷贝到各子项目的数据目录中）
 2. 数据格式：每行一条数据，格式为 `文本内容\t标签`
-3. 确保 `class.txt` 包含所有类别名称
+3. 确保 `class.txt` 包含所有类别名称（行顺序与标签编码保持一致）
 
 ## 📖 使用方法
 
