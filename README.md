@@ -100,8 +100,8 @@ News666/
 ### 0. 克隆项目
 
 ```bash
-git clone https://github.com/<your_name>/News666.git
-cd News666
+git clone https://github.com/<your_name>/******.git
+cd Classification.....
 ```
 
 ### 1. 环境要求
