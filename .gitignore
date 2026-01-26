@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 模型文件
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.pkl
+*.h5
+*.ckpt
+*.pth.tar
+
+# 检查点和保存的模型
+checkpoints/
+save_model/
+save_model1/
+*.checkpoint
+
+# 数据文件（通常很大，不应提交）
+*.txt
+*.csv
+*.jsonl
+*.json
+*.tsv
+*.parquet
+
+# 日志文件
+*.log
+logs/
+runs/
+
+# 临时文件
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# 预训练模型目录（通常很大）
+**/bert_pretrain/
+**/pretrain/
+**/pretrained/
+
+# 特定目录的数据文件（如果需要保留某些数据文件，可以注释掉相应行）
+# 01-data/ 目录下的数据文件
+# 02-rf/ 目录下的数据文件
+# 03-fasttest/ 目录下的数据文件
+# 04-bert/data/ 目录下的数据文件
+# LoRA_GLM/data/ 目录下的数据文件
+# P-Tuning/data/ 目录下的数据文件
+# PET/data/ 目录下的数据文件
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# 其他
+*.egg-info/
+dist/
+build/
+*.egg
