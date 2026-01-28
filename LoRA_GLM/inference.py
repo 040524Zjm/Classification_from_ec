@@ -41,7 +41,7 @@ def inference(
 
 if __name__ == '__main__':
     from rich import print
-    device = 'cuda:0'
+    device = 'cuda:0' # cpu
     max_new_tokens = 300
     model_path = r'\checkpoints\ptune\model_best'
 

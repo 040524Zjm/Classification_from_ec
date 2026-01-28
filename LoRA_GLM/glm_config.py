@@ -15,7 +15,7 @@ class ProjectConfig(object):
         self.batch_size = 1
         self.epochs = 2
         self.learning_rate = 3e-5
-        self.weight_decay = 0
+        self.weight_decay = 0 # 权重衰减
         self.warmup_ratio = 0.06
         self.max_source_seq_len = 400
         self.max_target_seq_len = 300

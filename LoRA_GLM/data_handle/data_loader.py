@@ -1,7 +1,7 @@
 # coding:utf-8
 import sys
 import os
-# 添加项目根目录到Python路径（关键修复）
+# 添加项目根目录到Python路径
 # 获取当前脚本所在目录
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 获取项目根目录（LoRA_GLM）
@@ -21,25 +21,33 @@ tokenizer = AutoTokenizer.from_pretrained(pc.pre_model, trust_remote_code=True)
 
 def get_data():
     from datasets import load_dataset
-    dataset = load_dataset('text', data_files={'train': pc.train_path,
-                                               'dev': pc.dev_path})
+    dataset = load_dataset('text', data_files={
+        'train': pc.train_path,
+        'dev': pc.dev_path}
+        )
 
 
-    new_func = partial(convert_example,
-                       tokenizer=tokenizer,
-                       max_source_seq_len=100,
-                       max_target_seq_len=100)
+    new_func = partial(
+        convert_example,
+        tokenizer=tokenizer,
+        max_source_seq_len=100,
+        max_target_seq_len=100
+    )
 
     dataset = dataset.map(new_func, batched=True)
     train_dataset = dataset["train"]
     dev_dataset = dataset["dev"]
-    train_dataloader = DataLoader(train_dataset,
-                                  shuffle=True,
-                                  collate_fn=default_data_collator,
-                                  batch_size=pc.batch_size)
-    dev_dataloader = DataLoader(dev_dataset,
-                                collate_fn=default_data_collator,
-                                batch_size=pc.batch_size)
+    train_dataloader = DataLoader(
+        train_dataset,
+        shuffle=True,
+        collate_fn=default_data_collator,
+        batch_size=pc.batch_size
+    )
+    dev_dataloader = DataLoader(
+        dev_dataset,
+        collate_fn=default_data_collator,
+        batch_size=pc.batch_size
+    )
     return train_dataloader, dev_dataloader
 
 

@@ -7,7 +7,7 @@ import peft
 # autocast是PyTorch中一种混合精度的技术，可在保持数值精度的情况下提高训练速度和减少显存占用。
 # 该方法混合精度训练，如果在CPU环境中不起任何作用
 from torch.cuda.amp import autocast as autocast
-from transformers import AutoTokenizer, AutoConfig, AutoModel, get_scheduler,AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoConfig, AutoModel, get_scheduler, AutoModelForCausalLM
 from utils.common_utils import *
 from data_handle.data_loader import *
 from glm_config import *
@@ -43,9 +43,9 @@ def evaluate_model(model, dev_dataloader):
 
 
 def model2train():
-    tokenizer = AutoTokenizer.from_pretrained(pc.pre_model, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(pc.pre_model, trust_remote_code=True) # 加载tokenizer
 
-    config = AutoConfig.from_pretrained(pc.pre_model, trust_remote_code=True)
+    config = AutoConfig.from_pretrained(pc.pre_model, trust_remote_code=True) # 获取模型配置
 
     if pc.use_ptuning:
         config.pre_seq_len = pc.pre_seq_len
@@ -69,12 +69,12 @@ def model2train():
         model.transformer.prefix_encoder.float()
     print(f'model.lm_head-->{model.lm_head}')
     if pc.use_lora:
-        model.lm_head = CastOutputToFloat(model.lm_head)
+        model.lm_head = CastOutputToFloat(model.lm_head) #输出层转成float32能避免数值精度丢失，在计算损失、评估指标时更稳定
         peft_config = peft.LoraConfig(
-            task_type=peft.TaskType.CAUSAL_LM,
-            inference_mode=False, # 推理时为True，比如绝定是否使用dropout
+            task_type=peft.TaskType.CAUSAL_LM, # 因果语言建模
+            inference_mode=False, # 推理时为True，比如定是否使用dropout
             r=pc.lora_rank, # 低秩矩阵维度
-            lora_alpha=32, # 缩放系数
+            lora_alpha=32, # 缩放系数 * | alpha / r
             lora_dropout=0.1,
         )
         model = peft.get_peft_model(model, peft_config)

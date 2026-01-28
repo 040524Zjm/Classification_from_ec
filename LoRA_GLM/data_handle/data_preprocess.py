@@ -11,7 +11,7 @@ sys.path.append('..')
 
 from glm_config import *
 
-
+# 转换数据
 def convert_example(
         examples: dict,
         tokenizer,
@@ -20,7 +20,6 @@ def convert_example(
     ):
     """
     将样本数据转换为Prompt-tuning模型接收的输入数据。
-
     Args:
         examples (dict): 训练数据样本, e.g. -> {
                                                 "text": [
@@ -64,6 +63,8 @@ def convert_example(
             )
             # print(f'target_ids--》{target_ids}\n{len(target_ids)}')
             # print('37010-->', tokenizer.convert_ids_to_tokens([37010, 12,5, 76331, 83362]))
+
+            # GLM模型
             # source 需要留一个 [gMASK] token 在结尾
             if len(prompts_ids) >= max_source_seq_len:
                 prompts_ids = prompts_ids[:max_source_seq_len - 1]
