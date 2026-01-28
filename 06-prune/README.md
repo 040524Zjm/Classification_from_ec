@@ -22,6 +22,32 @@
     - 卷积 → ReLU → 2x2 最大池化。
     - 展平后经过三层线性 + ReLU（最后一层无激活，输出 logits）。
 
+示例代码片段（节选自 `01-demo.py`）：
+
+```python
+import torch
+from torch import nn
+import torch.nn.functional as F
+
+class LeNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 6, 3)
+        self.conv2 = nn.Conv2d(6, 16, 3)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = x.view(-1, int(x.nelement() / x.shape[0]))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+```
+
 - **模型实例化**
   - `model = LeNet().to(device=device)`。
 
@@ -48,6 +74,22 @@
 
 - 若希望**将剪枝结构固化**到模型中（去掉 mask 和 orig）：
   - 调用 `prune.remove(module, name='weight')`。
+
+示例代码片段（典型单层剪枝流程）：
+
+```python
+import torch.nn.utils.prune as prune
+
+module = model.conv1
+print(list(module.named_parameters()))
+print(list(module.named_buffers()))
+
+prune.l1_unstructured(module, name='weight', amount=0.3)
+print(list(module.named_parameters()))  # 出现 weight_orig
+print(list(module.named_buffers()))     # 出现 weight_mask
+
+prune.remove(module, name='weight')    # 将剪枝固化
+```
 
 #### 2. 多层结构化/非结构化剪枝
 
@@ -94,6 +136,22 @@ parameters_to_prune = (
     - 示例策略：`mask.view(-1)[::2] = 0`，即**每隔一个参数剪掉一个**。
   - 返回更新后的 `mask`。
 
+示例代码片段（节选自 `01-demo.py` 的自定义剪枝实现）：
+
+```python
+class myself_pruning_method(prune.BasePruningMethod):
+    PRUNING_TYPE = 'unstructured'
+
+    def compute_mask(self, t, default_mask):
+        mask = default_mask.clone()
+        mask.view(-1)[::2] = 0
+        return mask
+
+def myself_unstructured_pruning(module, name):
+    myself_pruning_method.apply(module, name)
+    return module
+```
+
 #### 2. 应用自定义剪枝：`myself_unstructured_pruning`
 
 - 封装函数：
@@ -106,6 +164,18 @@ parameters_to_prune = (
     - `myself_unstructured_pruning(model.fc3, name='bias')`。
   - 打印 `model.fc3.bias_mask` 查看剪枝后的 mask。
   - 打印耗时。
+
+示例代码片段（应用自定义剪枝并查看结果）：
+
+```python
+import time
+
+start = time.time()
+myself_unstructured_pruning(model.fc3, name='bias')
+print(model.fc3.bias_mask)
+duration = time.time() - start
+print(duration * 1000, 'ms')
+```
 
 ---
 

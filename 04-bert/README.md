@@ -42,6 +42,27 @@
     - 添加 `[CLS]` / `[SEP]` 标记。
     - 截断或 Padding 到 `Config.pad_size`。
 
+示例代码片段（典型的构造样本流程，逻辑与 `utils/utils.py` 一致）：
+
+```python
+from transformers import BertTokenizer
+
+tokenizer = BertTokenizer.from_pretrained(config.bert_path)
+
+def encode_sentence(text, label_id):
+    token = tokenizer(
+        text,
+        padding='max_length',
+        truncation=True,
+        max_length=config.pad_size,
+        return_tensors='pt'
+    )
+    input_ids = token['input_ids'].squeeze(0)
+    attention_mask = token['attention_mask'].squeeze(0)
+    token_type_ids = token['token_type_ids'].squeeze(0)
+    return (input_ids, attention_mask, token_type_ids, label_id)
+```
+
 - **数据格式**
   - `build_dataset(config)` 返回：
     - `train_data`、`test_data`、`dev_data`（列表或 Dataset 对象）。
@@ -70,6 +91,33 @@
     - 调用 `evaluate` 在验证集上计算 `dev_acc` 与 `dev_loss`。
     - 若 `dev_loss` 优于历史最优，则保存模型参数至 `config.save_path`。
 
+示例代码片段（节选自 `train_eval.py` 的训练主循环）：
+
+```python
+loss_fn = nn.CrossEntropyLoss()
+param_optimizer = list(model.named_parameters())
+no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+optimizer_grouped_parameters = [
+    {
+        'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+        'weight_decay': 0.01
+    },
+    {
+        'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)],
+        'weight_decay': 0.0
+    }
+]
+optimizer = AdamW(optimizer_grouped_parameters, lr=config.learning_rate)
+
+for epoch in range(config.num_epochs):
+    for i, (trains, labels) in enumerate(train_iter):
+        outputs = model(trains)
+        loss = loss_fn(outputs, labels)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+```
+
 #### 2. 验证与测试函数
 
 - `evaluate(config, model, data_iter, test=False)`：
@@ -85,6 +133,22 @@
     - 打印最终测试集上的 `loss`、`acc`。
     - 打印每类的 `precision/recall/f1`。
     - 打印混淆矩阵与耗时。
+
+示例代码片段（节选自 `train_eval.py` 的测试函数）：
+
+```python
+def test(model, test_iter, config):
+    model.load_state_dict(torch.load(config.save_path, map_location=config.device))
+    model.eval()
+    test_acc, test_loss, test_report, test_confusion = evaluate(
+        config, model, test_iter, test=True
+    )
+    print(f'Test loss: {test_loss:>5.2f} Test acc: {test_acc:>6.2%}')
+    print('Precision, Recall and F1-Score...')
+    print(test_report)
+    print('Confusion Matrix...')
+    print(test_confusion)
+```
 
 ---
 
@@ -104,6 +168,36 @@
   - 两种典型使用方式：
     - **训练模式**：调用 `train(model, train_iter, dev_iter, config)`（目前示例中被注释，可按需放开）。
     - **测试模式**：从 `save_model/bert.pt` 加载已训练参数后，在测试集上调用 `test(...)`。
+
+示例代码片段（节选自 `run.py` 入口）：
+
+```python
+from importlib import import_module
+import numpy as np
+import torch
+from utils.utils import build_dataset, build_iterator
+from train_eval import train, test
+
+if __name__ == '__main__':
+    model_name = 'bert'
+    X = import_module('model.bert')
+    config = X.Config()
+
+    np.random.seed(1)
+    torch.manual_seed(1)
+    torch.cuda.manual_seed_all(1)
+    torch.backends.cudnn.deterministic = True
+
+    train_data, test_data, dev_data = build_dataset(config)
+    train_iter = build_iterator(train_data, config)
+    test_iter = build_iterator(test_data, config)
+    dev_iter = build_iterator(dev_data, config)
+
+    model = X.Model(config)
+    # train(model, train_iter, dev_iter, config)
+    model.load_state_dict(torch.load(config.save_path, map_location=config.device))
+    test(model, test_iter, config)
+```
 
 示例运行命令：
 

@@ -45,6 +45,27 @@
   - 截断 / Padding 至固定长度，生成 `input_ids`、`attention_mask` 等。
   - 按 `Config.batch_size` 构建迭代器：`build_iterator(train_data, config)`。
 
+示例代码片段（典型的 BERT 数据编码逻辑，与 `utils/utils.py` 一致）：
+
+```python
+from transformers import BertTokenizer
+
+tokenizer = BertTokenizer.from_pretrained(config.bert_path)
+
+def encode(text, label_id):
+    token = tokenizer(
+        text,
+        padding='max_length',
+        truncation=True,
+        max_length=config.pad_size,
+        return_tensors='pt'
+    )
+    input_ids = token['input_ids'].squeeze(0)
+    attention_mask = token['attention_mask'].squeeze(0)
+    token_type_ids = token['token_type_ids'].squeeze(0)
+    return (input_ids, attention_mask, token_type_ids, label_id)
+```
+
 #### 2. TextCNN 数据构建：`build_dataset_CNN(cnn_config)`
 
 - 区别在于：
@@ -53,6 +74,20 @@
     - `vocab`：词表（用于设置 `cnn_config.n_vocab`）。
     - `cnn_train_data`、`cnn_dev_data`、`cnn_test_data`：分别对应训练、验证、测试集。
   - 通过 `build_iterator` 为 TextCNN 构造批次迭代器。
+
+示例代码片段（典型 CNN 数据构建逻辑）：
+
+```python
+def build_dataset_CNN(config):
+    # 读取数据并构建词表 vocab
+    # 将句子映射为词 ID 序列，pad 到固定长度
+    # 返回 vocab, train_data, dev_data, test_data
+    ...
+
+vocab, cnn_train_data, cnn_dev_data, cnn_test_data = build_dataset_CNN(cnn_config)
+cnn_config.n_vocab = len(vocab)
+cnn_train_iter = build_iterator(cnn_train_data, cnn_config)
+```
 
 ---
 
@@ -70,6 +105,34 @@
     - 计算损失、反向传播、参数更新。
     - 每隔固定 batch 调用 `evaluate` 在验证集上评估：
       - 若验证损失更小，则 `torch.save(model.state_dict(), config.save_path)`。
+
+示例代码片段（节选自 `train_eval.py` 的普通训练循环）：
+
+```python
+def train(config, model, train_iter, dev_iter, test_iter):
+    loss_fn = nn.CrossEntropyLoss()
+    param_optimizer = list(model.named_parameters())
+    no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
+    optimizer_grouped_parameters = [
+        {
+            "params": [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+            "weight_decay": 0.01,
+        },
+        {
+            "params": [p for n, p in param_optimizer if any(nd in n for nd in no_decay)],
+            "weight_decay": 0.0,
+        },
+    ]
+    optimizer = AdamW(optimizer_grouped_parameters, lr=config.learning_rate)
+
+    for epoch in range(config.num_epochs):
+        for i, (trains, labels) in enumerate(train_iter):
+            model.zero_grad()
+            outputs = model(trains)
+            loss = loss_fn(outputs, labels)
+            loss.backward()
+            optimizer.step()
+```
 
 - **评估与测试**
   - `evaluate`：在验证/测试集上统计 `loss`、`acc`，并根据 `test` 标记决定是否输出分类报告与混淆矩阵。
@@ -120,6 +183,24 @@
   - 硬标签损失：`hard_loss = cross_entropy(outputs, labels)`。
   - 总损失：`KD_loss = alpha * soft_loss * T * T + (1 - alpha) * hard_loss`。
 
+示例代码片段（节选自 `train_eval.py` 的 KD 损失定义与使用）：
+
+```python
+criterion = nn.KLDivLoss()
+
+def loss_fn_kd(outputs, labels, teacher_outputs):
+    T = 2
+    alpha = 0.8
+
+    output_student = F.log_softmax(outputs / T, dim=1)
+    output_teacher = F.softmax(teacher_outputs / T, dim=1)
+
+    soft_loss = criterion(output_student, output_teacher)
+    hard_loss = F.cross_entropy(outputs, labels)
+    KD_loss = alpha * soft_loss * T * T + (1 - alpha) * hard_loss
+    return KD_loss
+```
+
 #### 4. CNN 训练循环（带蒸馏）
 
 - 与普通 `train` 类似，但损失换成 `loss_fn_kd`：
@@ -127,6 +208,20 @@
   - 反向传播、更新 CNN 参数。
   - 定期在验证集上评估，并保存最优 CNN 权重。
   - 最后在 `cnn_test_iter` 上调用 `test` 获取最终性能指标。
+
+示例代码片段（节选自 `train_eval.py` 的 `train_kd` 主循环）：
+
+```python
+teacher_outputs = fetch_teacher_output(bert_model, bert_train_iter)
+
+for epoch in range(cnn_config.num_epochs):
+    for i, (trains, labels) in enumerate(cnn_train_iter):
+        cnn_model.zero_grad()
+        outputs = cnn_model(trains)
+        loss = loss_fn_kd(outputs, labels, teacher_outputs[i])
+        loss.backward()
+        optimizer.step()
+```
 
 ---
 

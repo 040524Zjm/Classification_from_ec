@@ -22,6 +22,22 @@
     - `words`：分好词的文本字符串。
     - `labels`：对应的类别 ID。
 
+示例代码片段（节选自 `news.py`）：
+
+```python
+import pandas as pd
+import numpy as np
+import jieba
+
+df = pd.read_csv('../01-data/train.txt', sep='\t', names=['sentences', 'labels'])
+
+def cut_sentence(sentence):
+    return list(jieba.cut(sentence))
+
+df['words'] = df['sentences'].apply(lambda s: ' '.join(cut_sentence(s))[:30])
+df.to_csv('dev.csv')
+```
+
 ---
 
 ### 二、特征工程与模型训练（`rf.py`）
@@ -54,6 +70,32 @@
   - 使用多种指标评估模型：
     - `accuracy_score(y_test, y_predict)`
     - （代码中预留了 `precision_score / recall_score / f1_score`，可按需打开）。
+
+示例代码片段（节选自 `rf.py`）：
+
+```python
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+df = pd.read_csv('dev.csv')
+data = df['words'].values
+label = df['labels']
+
+transform = TfidfVectorizer()
+feature_vector = transform.fit_transform(data)
+
+x_train, x_test, y_train, y_test = train_test_split(
+    feature_vector, label, test_size=0.2, random_state=22
+)
+
+rf = RandomForestClassifier()
+rf.fit(x_train, y_train)
+y_predict = rf.predict(x_test)
+print(accuracy_score(y_test, y_predict))
+```
 
 ---
 

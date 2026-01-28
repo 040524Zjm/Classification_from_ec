@@ -26,6 +26,34 @@
     - `dev_fast.txt`（验证集）
     - `test_fast.txt`（测试集）
 
+示例代码片段（节选自 `01-preprocess.py`，以 test 为例）：
+
+```python
+id2name = {}
+idx = 0
+with open('../01-data/class.txt', 'r', encoding='utf-8') as f1:
+    for line in f1.readlines():
+        class_name = line.strip('\n').strip()
+        id2name[idx] = class_name
+        idx += 1
+
+train_data = []
+with open('../01-data/test.txt', 'r', encoding='utf-8') as f2:
+    for line in f2.readlines():
+        line = line.strip('\n').strip()
+        text, label = line.split('\t')
+        label_id = int(label)
+        label_name = id2name[label_id]
+        new_label = '__label__' + label_name
+        new_text = ' '.join(list(text))
+        new_data = new_label + ' ' + new_text
+        train_data.append(new_data)
+
+with open('test_fast.txt', 'w', encoding='utf-8') as f3:
+    for data in train_data:
+        f3.write(data + '\n')
+```
+
 > 说明：`01-preprocess.py` 中针对 train/dev/test 的部分有注释控制，可按需要打开或注释来生成不同文件。
 
 #### 3. 按“词”为单位生成 FastText 数据（`04-preprocess1.py`）
@@ -38,6 +66,37 @@
     - `train_fast1.txt`
     - `dev_fast1.txt`
     - `test_fast1.txt`
+
+示例代码片段（节选自 `04-preprocess1.py`）：
+
+```python
+import jieba
+
+id2label = {}
+idx = 0
+with open('../01-data/class.txt', 'r', encoding='utf-8') as f1:
+    for line in f1.readlines():
+        line = line.strip('\n').strip()
+        id2label[idx] = line
+        idx += 1
+
+def cut_text(before_path, after_path):
+    datas = []
+    with open(before_path, 'r', encoding='utf-8') as bf:
+        for line in bf.readlines():
+            line = line.strip('\n').strip()
+            sentence, label = line.split('\t')
+            label_id = int(label)
+            label_name = id2label[label_id]
+            new_label = '__label__' + label_name
+            sent_char = ' '.join(jieba.cut(sentence))
+            new_sentence = new_label + ' ' + sent_char
+            datas.append(new_sentence)
+    with open(after_path, 'w', encoding='utf-8') as af:
+        for data in datas:
+            af.write(data + '\n')
+    print('数据处理完成!')
+```
 
 > 通过对比 `train_fast*.txt` 与 `train_fast1*.txt` 的实验，可以对比“字级别”与“词级别”输入对 FastText 效果的影响。
 
@@ -58,6 +117,19 @@
     - 打印标签：`model.labels`。
     - 使用 `model.test('./test_fast.txt')` 在测试集上评估性能（返回样本数、准确率等）。
 
+示例代码片段（节选自 `02-fasttext.py`）：
+
+```python
+import fasttext
+
+model = fasttext.train_supervised('./train_fast.txt', 2)
+print(f'词的数量：{len(model.words)}')
+print(f'标签值:{model.labels}')
+
+result = model.test('./test_fast.txt')
+print(f'准确率:{result}')
+```
+
 #### 2. 自动调参 + 模型保存（`03-fasttext_2.py`）
 
 - 使用 FastText 自动调参功能：
@@ -71,6 +143,32 @@
   - 调用 `model.test(test_data_path)` 在 `test_fast.txt` 上评估。
   - 使用当前时间戳拼接模型名，比如 `news_fasttext_*.bin`，并通过：
     - `model.save_model(model_save_path)` 保存二进制模型。
+
+示例代码片段（节选自 `03-fasttext_2.py`）：
+
+```python
+import fasttext
+import time
+
+train_data_path = './train_fast.txt'
+dev_data_path = './dev_fast.txt'
+test_data_path = './test_fast.txt'
+
+model = fasttext.train_supervised(
+    input=train_data_path,
+    autotuneValidationFile=dev_data_path,
+    autotuneDuration=6,
+    wordNgrams=2,
+    verbose=3
+)
+
+result = model.test(test_data_path)
+print(result)
+
+time1 = time.time()
+model_save_path = './news_fasttext_{}.bin'.format(time1)
+model.save_model(model_save_path)
+```
 
 #### 3. 词级别输入下的自动调参（`05-fasttext_3.py`）
 
