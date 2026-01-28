@@ -120,7 +120,7 @@ verbalizer = Verbalizer(
 )
 ```
 
-Verbalizer 的作用：
+Verbalizer 言语化器的作用：
 - 将标签文本映射到多个可能的 token（子标签）
 - 在推理时，将预测的 token IDs 映射回主标签
 

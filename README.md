@@ -2,6 +2,8 @@
 
 一个全面的**标题与评论**文本**分类**项目，实现了从传统机器学习到深度学习、从预训练模型到LoRA、P-Tuning、PET的多种分类方法。
 
+每个目录下面都有一个更详细的md文档。
+
 ## 📋 项目简介
 
 本项目实现了多种文本分类方法，用于对中文**标题**进行10分类任务，以及**电商评价文本分类**及**信息抽取**。项目涵盖了传统机器学习、深度学习、模型优化以及大模型微调等多种技术路线，为新闻分类任务提供了完整的解决方案。
@@ -100,7 +102,7 @@ News666/
 ### 0. 克隆项目
 
 ```bash
-git clone https://github.com/<your_name>/******.git
+git clone https://github.com/.../******.git
 cd Classification.....
 ```
 
@@ -111,9 +113,9 @@ cd Classification.....
 - CUDA（可选，用于 GPU 加速）
 
 ### 2. 安装依赖
-
-> 如果只是想先跑通 BERT / FastText / RF，推荐先安装 `requirements0.txt`；  
-> 如果希望把 LoRA / P-Tuning / PET 全部跑一遍，建议使用 `requirements1.txt`。
+LoRA/P-Tuning/PET 使用最新版的依赖会有冲突
+> 如果通 BERT / FastText / RF，安装 `requirements0.txt`；  
+> 如果希望把 LoRA / P-Tuning / PET 全部跑一遍，建议使用 `requirements1.txt`。注：有两三个依赖版本要改
 
 **基础环境（推荐）**
 
